@@ -1,4 +1,4 @@
-# Sampling
+# Per-flow measurement
 This is an implementation of network traffic monitoring application using libpcap. 
 
 The sketch (compact data structure) and hash table are leveraged to perform the scalable counting.
