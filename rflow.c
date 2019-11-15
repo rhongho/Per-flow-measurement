@@ -10,7 +10,6 @@
 #include <string.h>    //strlen
 #include <sys/socket.h>    //socket
 #include <arpa/inet.h> //inet_addr
-//#include <netinet/if_ether.h> /* includes net/ethernet.h */
 #include <netinet/ether.h>
 #include <netinet/udp.h>   //Provides declarations for udp header
 #include <netinet/tcp.h>   //Provides declarations for tcp header
