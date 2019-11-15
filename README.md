@@ -11,7 +11,7 @@ https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=8056995
 gcc -o rflow rlfow.c hash.c -libpcap
 
 
-<h2>Excute</h2>
+<h2>Execute</h2>
 Format: ./File_name Interface Layer_to_monitor\n
 
 Example: ./rflow eth0 3
