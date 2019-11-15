@@ -31,17 +31,6 @@ char* interface_name;
 bool L3 = false;
 bool L4 = false;
 
-
-static inline int get_bitmask_of_d_index(int vector, int D)
-{
-    while (D-- > 0)
-    {
-        vector &= vector - 1;
-    }
-
-    return vector & -vector;    // a word that contains the D's bit in the virtual vector
-}
-
 /*****************************************used for hash***********************************/
 
 
@@ -104,14 +93,14 @@ int main(int argc,char **argv)
         usage();
         return 1;
     }
-	
+	//Get interface name for monitoring
 	if(strlen(argv[1]) != 0){
 			interface_name = argv[1];
 	}else{
         usage();
         return 1;
     }
-
+    //L3 or L4 monitoring?
     if(atoi(argv[2]) == 3)
         L3 = true;
     else if(atoi(argv[2]) == 4)
@@ -120,16 +109,16 @@ int main(int argc,char **argv)
         usage();
         return 1;
     }
-	
-    
+	//Memory allocation for sketch and hashtables    
     if(L3){
+		//Data structure of the sketch is int array
         memset(counter_L3, 0, counter_size*sizeof(int));
+		//Hash table/Flow record table
         if ((table_L3 = ht_create_L3(hash_table_size)) == NULL)
         {
             printf("Fail to allocate memory L3\n");
             exit(0);
         }
-        
     }else if(L4){
         memset(counter_L4, 0, counter_size*sizeof(int));
         if ((table_L4 = ht_create_L4(hash_table_size)) == NULL)
@@ -153,12 +142,12 @@ int main(int argc,char **argv)
 			return 1;
 	}
              
-    for(d=alldevs; d; d=d->next)
+	for(d=alldevs; d; d=d->next)
 	{
 		if(strcmp(d->name ,interface_name)==0)
 		break;
 	}
-	
+
 	printf("Monitoring interface: %s\n", d->name);
 	if ((adhandle= pcap_open_live(d->name, // name of the device
 							 65536,             // portion of the packet to capture. 
@@ -168,76 +157,26 @@ int main(int argc,char **argv)
 							 errbuf         // error buffer
 							 )) == NULL){
 			fprintf(stderr,"\nUnable to open the adapter. %s is not supported by libpcap\n", d->name);
-		   
+
 			pcap_freealldevs(alldevs);
 			return -1;
 	}
-	
-
 	pcap_loop(adhandle, 0, packet_handler, NULL);
 	pcap_close(adhandle);
-    pcap_freealldevs(alldevs);
-
-    /* 
-    // For trace analysis     
-	char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t *fp;        
-    
-    printf("Pcap file\n");
-
-    char tracefile[60] = "/home/isrl/CAIDA/dirA_m1.pcap";
-        if ((fp = pcap_open_offline(tracefile, errbuf)) == NULL)
-    {
-        fprintf(stderr, "\nUnable to open the file %s.\n", tracefile);
-    }
-    
-    pcap_loop(fp, 0, packet_handler, NULL);
-    pcap_close(fp);
-    FILE* result= fopen("./result_L3.txt", "w");
-    FILE* result1= fopen("./result_L4.txt", "w");
-
-    int loc, observed_flow = 0;
-    for(loc = 0; loc<table_L3->size;++loc)
-    {
-        if(table_L3->htable[loc] != NULL)
-        {
-            fprintf(result,"%"PRIu32" %"PRIu32" %"PRIu32"\n",table_L3->htable[loc]->hash_value,table_L3->htable[loc]->counter,table_L3->htable[loc]->est);
-        }
-        
-        if(table_L3->htable[loc] != NULL)
-                observed_flow++;
-    }
-    printf("observed_L3_flow: %d\n",observed_flow);
-    observed_flow = 0;
-
-    for(loc = 0; loc<table_L4->size;++loc)
-    {
-        if(table_L4->htable[loc] != NULL)
-        {
-            fprintf(result1,"%"PRIu32" %"PRIu32" %"PRIu32"\n",table_L4->htable[loc]->hash_value,table_L4->htable[loc]->counter,table_L4->htable[loc]->est);
-        }
-        
-        if(table_L4->htable[loc] != NULL)
-                observed_flow++;
-    }
-    printf("observed_L4_flow: %d\n",observed_flow);*/
+	pcap_freealldevs(alldevs);
     return 0;
 }
 
-
-
-/*****************Rflow+ Utilities*********************************************/
+/******************* Rflow+ Utilities *********************************************/
 
 uint64_t mac2int(const uint8_t hwaddr[])
 {
     int8_t i;
     uint64_t ret = 0;
     const uint8_t *p = hwaddr;
-
     for (i = 5; i >= 0; i--) {
         ret |= (uint64_t) *p++ << (CHAR_BIT * i);
     }
-
     return ret;
 }
 
@@ -245,7 +184,6 @@ void int2mac(const uint64_t mac, uint8_t *hwaddr)
 {
     int8_t i;
     uint8_t *p = hwaddr;
-
     for (i = 5; i >= 0; i--) {
         *p++ = mac >> (CHAR_BIT * i);
     }
@@ -261,24 +199,17 @@ static inline void bin(unsigned n)
 } 
 
 
-uint64_t get_device_MAC_address(char *iface)
+static inline uint64_t get_device_MAC_address(char *iface)
 {
     int fd;
     struct ifreq ifr;
-
     u_char *mac;
-
     fd = socket(AF_INET, SOCK_DGRAM, 0);
-
     ifr.ifr_addr.sa_family = AF_INET;
     strncpy(ifr.ifr_name , iface , IFNAMSIZ-1);
-
     ioctl(fd, SIOCGIFHWADDR, &ifr);
-
     close(fd);
-
     mac = (u_char *)ifr.ifr_hwaddr.sa_data;
-
     //display mac address
     printf("%s Mac: %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\t" ,iface, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     uint64_t mac_uint64 = (uint64_t)mac[0] << 40 | (uint64_t)mac[1] << 32 |
@@ -290,11 +221,10 @@ uint64_t get_device_MAC_address(char *iface)
     return mac_uint64;
 }
 
-/***********************************Approximate Counting Utilities********************************************/
+/***************************** Approximate Counting Utilities ********************************************/
 
 static unsigned int g_seed1 = 0;
 static unsigned int g_seed2 = 0;
-static unsigned int g_seed3 = 0;
 
 // Compute a pseudorandom integer.
 // Output value in range [0, 32767]
@@ -307,16 +237,27 @@ static inline int fast_rand_gen2(void) {
     return (g_seed2>>16)&0x7FFF;
 }
 
+static inline int get_bitmask_of_d_index(int vector, int D)
+{
+    while (D-- > 0)
+    {
+        vector &= vector - 1;
+    }
+
+    return vector & -vector;    // a word that contains the D's bit in the virtual vector
+}
+
 static inline uint32_t vector_maker(uint32_t hash_value){
 	return (0x1<<(hash_value & 0x3)) | (0x10<<((hash_value>>4) & 0x3))
         | (0x100<<((hash_value>>8) & 0x3)) | (0x1000<<((hash_value>>12) & 0x3))
         | (0x10000<<((hash_value>>16) & 0x3)) | (0x100000<<((hash_value>>20) & 0x3))
         | (0x1000000<<((hash_value>>24) & 0x3)) | (0x10000000<<((hash_value>>28) & 0x3));
 }
-/*********************************************************************************/
+
+/******************************** Print Stat *************************************************/
 
 //Print Stat. When Vector Saturate
-void print_L3_stat(){
+static inline void print_L3_stat(){
     int loc, observed_flow = 0;
     printf("Layer-3 Flow Stat.\n   Flow_id|  Real_count|  Estimation\n");
     for(loc = 0; loc<table_L3->size;++loc)
@@ -329,7 +270,7 @@ void print_L3_stat(){
     } 
 }
 
-void print_L4_stat(){
+static inline void print_L4_stat(){
     int loc, observed_flow = 0;
     printf("Layer-4 Flow Stat.\n   Flow_id|  Real_count|  Estimation\n");
     for(loc = 0; loc<table_L4->size;++loc)
@@ -342,7 +283,9 @@ void print_L4_stat(){
     } 
 }
 
-/* packet parsing pipline and counting*/
+
+
+/******************* packet parsing pipline and counting*******************/
 
 uint32_t prev_check_point = 0;
 void packet_handler(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data){
@@ -370,26 +313,6 @@ void packet_handler(u_char *param, const struct pcap_pkthdr *header, const u_cha
         id = iph->daddr;
         proto = iph->protocol;
 
-   //Print stat every 5 sec
-   //      if(header->ts.tv_sec - prev_check_point >= 5 )
-   //      {
-   //          prev_check_point = header->ts.tv_sec;
-   //          //memset(counter_L3, 0, counter_size*sizeof(uint32_t));
-                        
-    
-   //          int loc, observed_flow = 0;
-			// printf("Flow Stat.\nFlow_id | Real_count | Estimation\n");
-   //          for(loc = 0; loc<table_L3->size;++loc)
-   //          {
-   //              if(table_L3->htable[loc] != NULL)
-   //              {
-   //                 printf("%10"PRIu32" %10"PRIu32" %10f\n",table_L3->htable[loc]->hash_value,table_L3->htable[loc]->counter,table_L3->htable[loc]->est);
-   //                 //table_L3->htable[loc]= NULL;
-   //              }
-   //          }       
-   //      }
-
-
         if(proto == 6){
             tcpheader = (struct tcphdr*)(pkt_data + SIZE_ETHERNET + iph->ihl * 4);
             sp = ntohs(tcpheader->th_sport);
@@ -408,7 +331,7 @@ void packet_handler(u_char *param, const struct pcap_pkthdr *header, const u_cha
         hash = hash_add(hash, is); //CRC check sum based hashing
         hash = hash_add(hash, id);
         
-        //L3 real count
+        //L3 real count (for comparing with estimations)
         ht_insert_L3(table_L3, hash, is, id,0);
         
         //L3 approximate count
@@ -429,13 +352,13 @@ void packet_handler(u_char *param, const struct pcap_pkthdr *header, const u_cha
 
         if(!L4)
             return;
-        //L4 
+        //L4 flow stat.
         hash = hash_add(hash, proto);
         hash = hash_add(hash, sp);
         hash = hash_add(hash, dp);
         
         
-        //L4 real count
+        //L4 real count (for comparing with estimations)
 		ht_insert_L4(table_L4,hash,is,id,proto,sp,dp,0);
 
         //L4 approximate count
