@@ -8,7 +8,7 @@ https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=8056995
 
 <h2> Compile</h2>
 
-gcc -o rflow rlfow.c hash.c -libpcap
+./compile.sh
 
 
 <h2>Execute</h2>
