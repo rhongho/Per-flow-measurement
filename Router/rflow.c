@@ -22,10 +22,10 @@
 
 int system(const char *command);
 void packet_handler(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data);
-uint64_t get_MAC_address(char *iface);
+uint64_t get_device_MAC_address(char *iface);
 uint64_t MAC_ff = 281474976710655;
 char* interface_name;
-
+uint64_t device_ID;
 bool L2 = false;
 bool L3 = false;
 bool L4 = false;
@@ -97,8 +97,13 @@ void* stat_upload(void* para){
 		struct json_object *array, *object, *tmp;
 		array = json_object_new_array();
 		object = json_object_new_object();
+		
+		tmp = json_object_new_int64(device_ID);
+		json_object_object_add(object, "ID", tmp);
 		if(L2){
-			print_L2_stat();
+			//print_L2_stat();
+			tmp = json_object_new_int(2);
+			json_object_object_add(object, "Layer", tmp);
 			for(i = 0; i< table_L2->size; i++){
 				if (table_L2->htable[i] != NULL){
 					tmp = json_object_new_int(table_L2->htable[i]->hash_value);
@@ -108,11 +113,12 @@ void* stat_upload(void* para){
 					table_L2->htable[i]->est = 0;
 				}
 			}
-			json_object_object_add(object, "L2", array);
-			update(json_object_to_json_string(object));
-
+			
+			
 		}
 		if(L3){
+			tmp = json_object_new_int(3);
+			json_object_object_add(object, "Layer", tmp);
 			for(i = 0; i< table_L3->size; i++){
 				if (table_L3->htable[i] != NULL && table_L3->htable[i]->est > 0){
 					tmp = json_object_new_int(table_L3->htable[i]->hash_value);
@@ -122,11 +128,10 @@ void* stat_upload(void* para){
 					table_L3->htable[i]->est = 0;
 				}
 			}
-			json_object_object_add(object, "L3", array);
-			update(json_object_to_json_string(object));
-
 		}
 		if(L4){
+			tmp = json_object_new_int(4);
+			json_object_object_add(object, "Layer", tmp);
 			for(i = 0; i< table_L4->size; i++){
 				if (table_L4->htable[i] != NULL && table_L4->htable[i]->est > 0){
 					tmp = json_object_new_int(table_L4->htable[i]->hash_value);
@@ -136,10 +141,10 @@ void* stat_upload(void* para){
 					table_L3->htable[i]->est = 0;
 				}
 			}
-			json_object_object_add(object, "L4", array);
-			update(json_object_to_json_string(object));
-
 		}
+		json_object_object_add(object, "Flow_Record", array);
+		update(json_object_to_json_string(object));
+
 	}
 }
 
@@ -333,6 +338,7 @@ int main(int argc,char **argv)
 		if(strcmp(d->name ,interface_name)==0)
 		break;
 	}
+	device_ID = get_device_MAC_address(d->name);
 
 	printf("Monitoring interface: %s\n", d->name);
 	if ((adhandle= pcap_open_live(d->name, // name of the device
