@@ -1,4 +1,10 @@
+H2 Prerequisites
+```
+sudo pip install mongodb
+```
 
+
+RESTful API Usage
 ```JSON
 {
     "type": "Statistics",
