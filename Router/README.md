@@ -1,7 +1,8 @@
 <h2>Compile</h2>
 
+```
 ./compile.sh
-
+```
 
 <h2>Execute</h2>
 
