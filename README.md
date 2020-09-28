@@ -6,12 +6,4 @@ The code is the flow estimation part of Rflow+ work (INFOCOM 2017).
 
 https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=8056995
 
-<h2> Compile</h2>
 
-./compile.sh
-
-
-<h2>Execute</h2>
-Format: ./File_name Interface Layer_to_monitor\n
-
-Example: ./rflow eth0 3
