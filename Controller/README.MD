@@ -1,4 +1,4 @@
-H2 Prerequisites
+### Prerequisites
 ```
 sudo pip install mongodb
 ```
