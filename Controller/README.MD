@@ -1,5 +1,5 @@
 
-```
+```JSON
 {
     "type": "Statistics",
     "Node": "ALL", 
