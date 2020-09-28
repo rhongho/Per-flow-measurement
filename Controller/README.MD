@@ -10,6 +10,10 @@ python3 RESTful_API.py
 
 ### RESTful API Usage
 
+```
+IP_ADDRESS/{user_ID}/rflow_collector
+```
+
 RFlow_Object Example
 ```JSON
 {
