@@ -7,8 +7,6 @@
 
 #define PORT 8080 
 
-char* collector_IP = "192.168.0.146";
-
-void update(char* stat);
+void update(char* stat, char* IP_collector);
 
 

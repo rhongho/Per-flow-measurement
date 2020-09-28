@@ -25,6 +25,7 @@ void packet_handler(u_char *param, const struct pcap_pkthdr *header, const u_cha
 uint64_t get_device_MAC_address(char *iface);
 uint64_t MAC_ff = 281474976710655;
 char* interface_name;
+char* IP_collector = "192.168.0.146";
 uint64_t device_ID;
 bool L2 = false;
 bool L3 = false;
@@ -46,7 +47,7 @@ Rule_Table *rule_table;
 struct queue_root *queue;
 
 void usage(){
-    printf("Error. Usage: \"./file_name NIC_name Monitoring_Layer\"\nEx. ./rflow eth 3\nMonitoring_Layer: 3 or 4\n" );
+    printf("Error. Usage: \"./file_name NIC_name Collector_IP Monitoring_Layer\"\nEx. ./rflow eth 3\nMonitoring_Layer: 3 or 4\n" );
 }
 
 /* Print Stat */
@@ -94,7 +95,7 @@ void* stat_upload(void* para){
 	int i;
 	while (1){
 		sleep(5);
-		struct json_object *array, *object, *tmp;
+		struct json_object *array_record, *array, *object, *tmp;
 		array = json_object_new_array();
 		object = json_object_new_object();
 		
@@ -105,11 +106,19 @@ void* stat_upload(void* para){
 			tmp = json_object_new_int(2);
 			json_object_object_add(object, "Layer", tmp);
 			for(i = 0; i< table_L2->size; i++){
-				if (table_L2->htable[i] != NULL){
+				if (table_L2->htable[i] != NULL && table_L2->htable[i]->est > 0){
+					array_record = json_object_new_array();
+					
 					tmp = json_object_new_int(table_L2->htable[i]->hash_value);
-					json_object_array_add(array,tmp);
+					json_object_array_add(array_record,tmp);
+					tmp = json_object_new_int64(table_L2->htable[i]->mac_s);
+					json_object_array_add(array_record,tmp);
+					tmp = json_object_new_int64(table_L2->htable[i]->mac_d);
+					json_object_array_add(array_record,tmp);
 					tmp = json_object_new_double(table_L2->htable[i]->est);
-					json_object_array_add(array,tmp);
+					json_object_array_add(array_record,tmp);
+										
+					json_object_array_add(array,array_record);					
 					table_L2->htable[i]->est = 0;
 				}
 			}
@@ -121,10 +130,18 @@ void* stat_upload(void* para){
 			json_object_object_add(object, "Layer", tmp);
 			for(i = 0; i< table_L3->size; i++){
 				if (table_L3->htable[i] != NULL && table_L3->htable[i]->est > 0){
+					array_record = json_object_new_array();
+					
 					tmp = json_object_new_int(table_L3->htable[i]->hash_value);
-					json_object_array_add(array,tmp);
+					json_object_array_add(array_record,tmp);
+					tmp = json_object_new_int(table_L3->htable[i]->is);
+					json_object_array_add(array_record,tmp);
+					tmp = json_object_new_int(table_L3->htable[i]->id);
+					json_object_array_add(array_record,tmp);
 					tmp = json_object_new_double(table_L3->htable[i]->est);
-					json_object_array_add(array,tmp);
+					json_object_array_add(array_record,tmp);
+					
+					json_object_array_add(array,array_record);
 					table_L3->htable[i]->est = 0;
 				}
 			}
@@ -134,16 +151,30 @@ void* stat_upload(void* para){
 			json_object_object_add(object, "Layer", tmp);
 			for(i = 0; i< table_L4->size; i++){
 				if (table_L4->htable[i] != NULL && table_L4->htable[i]->est > 0){
+					array_record = json_object_new_array();
+					
 					tmp = json_object_new_int(table_L4->htable[i]->hash_value);
-					json_object_array_add(array,tmp);
+					json_object_array_add(array_record,tmp);
+					tmp = json_object_new_int(table_L4->htable[i]->is);
+					json_object_array_add(array_record,tmp);
+					tmp = json_object_new_int(table_L4->htable[i]->id);
+					json_object_array_add(array_record,tmp);
+					tmp = json_object_new_int(table_L4->htable[i]->proto);
+					json_object_array_add(array_record,tmp);
+					tmp = json_object_new_int(table_L4->htable[i]->sp);
+					json_object_array_add(array_record,tmp);
+					tmp = json_object_new_int(table_L4->htable[i]->dp);
+					json_object_array_add(array_record,tmp);
 					tmp = json_object_new_double(table_L4->htable[i]->est);
-					json_object_array_add(array,tmp);
-					table_L3->htable[i]->est = 0;
+					json_object_array_add(array_record,tmp);
+					
+					json_object_array_add(array,array_record);
+					table_L4->htable[i]->est = 0;
 				}
 			}
 		}
 		json_object_object_add(object, "Flow_Record", array);
-		update(json_object_to_json_string(object));
+		update(json_object_to_json_string(object), IP_collector);
 
 	}
 }
@@ -267,7 +298,7 @@ void* packet_processing(void* para){
 
 int main(int argc,char **argv)
 {
-	if(argc < 3){
+	if(argc < 4){
 		usage();
 		return 1;
 	}
@@ -278,12 +309,21 @@ int main(int argc,char **argv)
 		usage();
 	return 1;
 	}
+	
+	//Get IP address of RFlow Collector	
+	if(strlen(argv[2]) != 0){
+		IP_collector = argv[2];
+	}else{
+		usage();
+	return 1;
+	}
+	
 	//L3 or L4 monitoring?
-	if(atoi(argv[2]) == 2)
+	if(atoi(argv[3]) == 2)
 		L2 = true;
-	else if(atoi(argv[2]) == 3)
+	else if(atoi(argv[3]) == 3)
 		L3 = true;
-	else if(atoi(argv[2]) == 4)
+	else if(atoi(argv[3]) == 4)
 		L4 = true;
 	else{
 		usage();
