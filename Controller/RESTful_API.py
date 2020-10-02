@@ -18,8 +18,7 @@ class StorageEngine(object):
 
     def add_rule(self, rflow_object):
         Rule = {"ID":rflow_object['ID'], "Layer":rflow_object['Layer'], "src_MAC":rflow_object['src_MAC'], "dst_MAC":rflow_object['dst_MAC'], 				"src_IP": rflow_object['src_IP'],"dst_IP": rflow_object['dst_IP'], "Porto":rflow_object['Proto'], 				"src_Port":rflow_object['src_Port'], "dst_Port":rflow_object['dst_Port'], 				"Priority":rflow_object['Priority'],"TimeWindow":rflow_object['TimeWindow'],"Threshold":rflow_object['Threshold'], 			"Action":rflow_object['Action']}
-        if Rules.count_documents(Rule) == 0:
-        	Rules.insert_one(Rule)
+        #self.Install_rule(Rule)
         return list(Rules.find())
 
 class StorageError(Exception):
