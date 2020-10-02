@@ -40,7 +40,7 @@ For instanse, the follwing RFlow_Object accesses all flow statistics:
 }
 ```
 
-Rule Install
+Rule Install Example
 ```JSON
 {
     "type": "Control",
