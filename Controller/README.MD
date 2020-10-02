@@ -15,6 +15,8 @@ http://IP_ADDRESS/{user_ID}/rflow_collector
 ```
 
 RFlow_Object Example
+
+Flow record lookup
 ```JSON
 {
     "type": "Statistics",
@@ -37,3 +39,20 @@ For instanse, the follwing RFlow_Object accesses all flow statistics:
     "type": "Statistics"
 }
 ```
+
+Rule Install
+```JSON
+{
+    "type": "Control",
+    "ID": "1", 
+    "Layer": "4",
+    "MAC_src":"MAC_1", 
+    "MAC_dst":"MAC_2", 
+    "IP_src":"IP_1", 
+    "IP_dst":"IP_2", 
+    "Proto":"6", 
+    "Port_src":"23", 
+    "Port_dst":"60542",
+    "TimeWindow": 50,
+    "Threshold": 1000
+}
