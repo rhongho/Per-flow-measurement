@@ -7,8 +7,10 @@ from _thread import *
 print_lock = threading.Lock() 
 
 myclient = MongoClient('localhost', 27017)
-mydb = myclient["RflowCollector"]
-FlowCol = mydb["FlowRecord"]
+mydb = myclient.RflowCollector
+FlowCol = mydb.FlowRecord
+Rules = mydb.FlowRule
+
 
 # thread function 
 def threaded(c): 
@@ -57,8 +59,8 @@ def threaded(c):
             			else:
             				dict={"ID":ID, "Layer":Layer, "Hash": y[0], "src_IP": y[1],"dst_IP": y[2], "Porto":y[3], "src_Port":y[4], "dst_Port":y[5], "counter":float(y[6])}
             				FlowCol.insert_one(dict)
-            			
-
+ 		
+        #c.send(list(Rules.find("")))
     c.close() 
   
   
