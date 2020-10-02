@@ -9,6 +9,7 @@ from pymongo import MongoClient
 myclient = MongoClient('localhost', 27017)
 mydb = myclient.RflowCollector
 FlowCol = mydb.FlowRecord
+Rules = mydb.FlowRule
 
 class StorageEngine(object):
 
@@ -16,8 +17,10 @@ class StorageEngine(object):
         return list(FlowCol.find(rflow_object))
 
     def add_rule(self, rflow_object):
-        rule['id'] = rflow_object
-        return rule
+        Rule = {"ID":rflow_object['ID'], "Layer":rflow_object['Layer'], "src_MAC":rflow_object['src_MAC'], "dst_MAC":rflow_object['dst_MAC'], 				"src_IP": rflow_object['src_IP'],"dst_IP": rflow_object['dst_IP'], "Porto":rflow_object['Proto'], 				"src_Port":rflow_object['src_Port'], "dst_Port":rflow_object['dst_Port'], 				"Priority":rflow_object['Priority'],"TimeWindow":rflow_object['TimeWindow'],"Threshold":rflow_object['Threshold'], 			"Action":rflow_object['Action']}
+        if Rules.count_documents(Rule) == 0:
+        	Rules.insert_one(Rule)
+        return list(Rules.find())
 
 class StorageError(Exception):
 
@@ -128,8 +131,7 @@ class ThingsResource(object):
 
     def on_get(self, req, resp, user_id):
         rflow_object = req.context.doc
-        marker = rflow_object
-	
+        	
         if rflow_object['type'] == "Statistics":
             try:
             	del rflow_object['type']            
@@ -137,9 +139,7 @@ class ThingsResource(object):
             except Exception as ex:
             	self.logger.error(ex)
 
-            	description = ('Aliens have attacked our base! We will '
-                           'be back as soon as we fight them off. '
-                           'We appreciate your patience.')
+            	description = ('Fail to lookup flow records.')
 
             	raise falcon.HTTPServiceUnavailable(
                 'Service Outage',
@@ -152,19 +152,17 @@ class ThingsResource(object):
 
     @falcon.before(max_body(64 * 1024))
     def on_post(self, req, resp, user_id):
-        rflow_object = resp.context.doc
-        try:
-            doc = req.context.doc
-        except AttributeError:
-            raise falcon.HTTPBadRequest(
-                'Missing Rflow_object',
-                'A Rflow_object must be submitted in the request body.')
-
-        rules = self.db.add_rule(doc)
-
+        rflow_object = req.context.doc
+        if rflow_object['type'] == "Control":
+            try:
+            	del rflow_object['type']
+            	result = self.db.add_rule(rflow_object)
+            except AttributeError:
+            	raise falcon.HTTPBadRequest(
+		        'Missing Rflow_object',
+		        'A Rflow_object must be submitted in the request body.')
+        #resp.context.result = result	
         resp.status = falcon.HTTP_201
-        resp.location = '/%s/rflow_rollector/%s' % (user_id, rules['id'])
-
 
 # Configure your WSGI server to load "things.app" (app is a WSGI callable)
 app = falcon.API(middleware=[

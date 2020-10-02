@@ -17,7 +17,7 @@ def threaded(c):
         # data received from client 
         data = c.recv(4096)
         if not data: 
-            print('Bye') 
+            print('No Data') 
             
             # lock released on exit 
             print_lock.release() 
@@ -58,10 +58,7 @@ def threaded(c):
             				dict={"ID":ID, "Layer":Layer, "Hash": y[0], "src_IP": y[1],"dst_IP": y[2], "Porto":y[3], "src_Port":y[4], "dst_Port":y[5], "counter":float(y[6])}
             				FlowCol.insert_one(dict)
             			
-            		#for z in FlowCol.find():
-            			#print(z)
-  
-    # connection closed 
+
     c.close() 
   
   
